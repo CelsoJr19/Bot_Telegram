@@ -22,14 +22,14 @@ COR_RESET = "\033[0m"
 
 def mostrar_banner():
     os.system('cls' if os.name == 'nt' else 'clear')
-    logo = f"""
-    {COR_AZUL}      / \\
-    {COR_AZUL}    /   /
-    {COR_AZUL}  /   /     {COR_CIANO} _______ ___ _    ___ ___ ___   _   __  __
-    {COR_AZUL} /___/      {COR_CIANO}|_   _| __| | |  | __/ __| _ \ /_\\ |  \\/  |
-    {COR_BRANCO}            {COR_CIANO}  | | | _| | |__| _| (_ |   // _ \\ | |\\/| |
-    {COR_BRANCO}            {COR_CIANO}  |_| |___|____|___\\___|_|_/_/ \\_\\_|  |_|
-    
+    logo = fr"""
+    {COR_AZUL}      _______
+    {COR_AZUL}    /  ____  \
+    {COR_AZUL}   /  |    |  \    {COR_CIANO} _____ _____ _      _____ _____ _____  ___  ___
+    {COR_AZUL}  |   |____|   |   {COR_CIANO}|_   _|   __| |    |   __|   __| __  ||   ||   |
+    {COR_AZUL}   \          /    {COR_CIANO}  | | |   __| |___ |   __|   __|    -|| | || | |
+    {COR_AZUL}    \________/     {COR_CIANO}  |_| |_____|_____||_____|_____|__|__||___||_|_|
+
     {COR_RESET}   >>> Server Online • Debian 32-bit • v2.0 <<<
     """
     print(logo)
