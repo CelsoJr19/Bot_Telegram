@@ -23,14 +23,19 @@ COR_RESET = "\033[0m"
 def mostrar_banner():
     os.system('cls' if os.name == 'nt' else 'clear')
     logo = fr"""
-    {COR_AZUL}      _______
-    {COR_AZUL}    /  ____  \
-    {COR_AZUL}   /  |    |  \    {COR_CIANO} _____ _____ _      _____ _____ _____  ___  ___
-    {COR_AZUL}  |   |____|   |   {COR_CIANO}|_   _|   __| |    |   __|   __| __  ||   ||   |
-    {COR_AZUL}   \          /    {COR_CIANO}  | | |   __| |___ |   __|   __|    -|| | || | |
-    {COR_AZUL}    \________/     {COR_CIANO}  |_| |_____|_____||_____|_____|__|__||___||_|_|
+    {COR_AZUL}  ____ _   _    _  _____ 
+    {COR_AZUL} / ___| | | |  / \|_   _|
+    {COR_AZUL}| |   | |_| | / _ \ | |  
+    {COR_AZUL}| |___|  _  |/ ___ \| |  
+    {COR_AZUL} \____|_| |_/_/   \_\_|  
+    
+    {COR_CIANO} _____ _____ _    _____ ____ ____      _    __  __
+    {COR_CIANO}|_   _| ____| |  | ____/ ___|  _ \    / \  |  \/  |
+    {COR_CIANO}  | | |  _| | |  |  _|| |  _| |_) |  / _ \ | |\/| |
+    {COR_CIANO}  | | | |___| |__| |__| |_| |  _ <  / ___ \| |  | |
+    {COR_CIANO}  |_| |_____|_____|_____\____|_| \_\/_/   \_\_|  |_|
 
-    {COR_RESET}   >>> Server Online • Debian 32-bit • v2.0 <<<
+    {COR_RESET}    >>> Server Online • Debian 32-bit • v2.0  By Celso Jr. & Telegram FZ-LLC <<<
     """
     print(logo)
 
