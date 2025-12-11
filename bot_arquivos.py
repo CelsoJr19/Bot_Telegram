@@ -4,16 +4,16 @@ import os
 import sys
 
 # --- CONFIGURAÇÃO ---
-TOKEN = "8454309616:AAG0TJjt0Jt4wAod0gCmEm4n4Lc1oYjY2m0" 
+TOKEN = "Seu Token aqui" 
 bot = telebot.TeleBot(TOKEN)
 
 # --- LISTA DE CONTATOS (SUA AGENDA) ---
 # Dica: Peça pro seu amigo mandar um "Oi" primeiro pra descobrir o ID dele.
 AMIGOS = {
     # ID : "Apelido"
-    123456789: "Teste",
-    987654321: "Hugo",
-    555555555: "Mae",
+    123456789: "Teste", #Exemplo
+    987654321: "Hugo", #Exemplo
+    555555555: "Mae", #Exemplo
     # Adicione seus amigos aqui...
 }
 
