@@ -14,6 +14,26 @@ AMIGOS = {
     # Exemplo: 12345678: "Melhor Amigo",
 }
 
+# --- CORES E VISUAL ---
+COR_AZUL = "\033[1;34m"   # Azul escuro
+COR_CIANO = "\033[1;36m"  # Azul claro
+COR_BRANCO = "\033[1;37m" # Branco brilhante
+COR_RESET = "\033[0m"
+
+def mostrar_banner():
+    os.system('cls' if os.name == 'nt' else 'clear')
+    logo = f"""
+    {COR_AZUL}      / \\
+    {COR_AZUL}    /   /
+    {COR_AZUL}  /   /     {COR_CIANO} _______ ___ _    ___ ___ ___   _   __  __
+    {COR_AZUL} /___/      {COR_CIANO}|_   _| __| | |  | __/ __| _ \ /_\\ |  \\/  |
+    {COR_BRANCO}            {COR_CIANO}  | | | _| | |__| _| (_ |   // _ \\ | |\\/| |
+    {COR_BRANCO}            {COR_CIANO}  |_| |___|____|___\\___|_|_/_/ \\_\\_|  |_|
+    
+    {COR_RESET}   >>> Server Online • Debian 32-bit • v2.0 <<<
+    """
+    print(logo)
+
 def obter_nome_formatado(message):
     id_user = message.chat.id
     nome_original = message.from_user.first_name
@@ -29,8 +49,8 @@ def obter_nome_formatado(message):
 ultimo_chat_id = None
 ultimo_nome = "Ninguém"
 
-print("\033[1;32m--- ZAP DO TERMINAL 2.0 ---\033[0m")
-print("Aguardando mensagens... (IDs desconhecidos aparecerão na tela)")
+mostrar_banner()
+print(f"{COR_BRANCO}Aguardando conexões... (Ctrl+C para encerrar){COR_RESET}\n")
 
 # --- RECEBER TEXTO ---
 @bot.message_handler(func=lambda m: True)
