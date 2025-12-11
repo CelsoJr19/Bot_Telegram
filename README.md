@@ -1,5 +1,5 @@
 # Bot_Telegram
-API de Bot do Telegram para usar o telegram no meu computador Headless de 32 Bits para poder converar, mandar e receber arquivos de seus amigos.
+Programa que usa API de Bot do Telegram para usar o telegram no meu computador Headless de 32 Bits para poder converar, mandar e receber arquivos de seus amigos.
 
 # Passo 1: Criar o Bot (No seu celular)
 Você precisa "registrar" o bot no Telegram para ganhar a chave de acesso.
