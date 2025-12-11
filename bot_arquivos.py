@@ -1,83 +1,107 @@
 import telebot
+import threading
+import time
 import os
+import sys
 
 # --- CONFIGURAÇÃO ---
-# Cole seu Token do BotFather aqui
-TOKEN = "8481778524:AAG3hsguneuoMwMnAbnsLoo-c7RzTtU-QRk"
-
-# Coloque o SEU ID do Telegram aqui para segurança (opcional, mas recomendado)
-# Para descobrir seu ID, mande mensagem para o @userinfobot no Telegram
-SEU_ID = 0  # Troque 0 pelo número do seu ID se quiser restringir acesso
-
+TOKEN = "8454309616:AAG0TJjt0Jt4wAod0gCmEm4n4Lc1oYjY2m0" 
 bot = telebot.TeleBot(TOKEN)
 
-print("--- Bot do Notebook Iniciado ---")
+# Variável para saber com quem estamos falando por último
+# (Para o bot saber pra quem mandar sua resposta)
+ultimo_chat_id = None
+ultimo_nome = "Ninguém"
 
-# Função para verificar se é você falando (Segurança básica)
-def eh_o_dono(message):
-    if SEU_ID == 0: return True # Se for 0, aceita todo mundo (cuidado!)
-    return message.from_user.id == SEU_ID
+print("\033[1;32m--- SISTEMA DE CHAT DEBIAN ONLINE ---\033[0m")
+print("Aguardando mensagens... (Pode digitar a qualquer momento)")
 
-# 1. Comando /start
-@bot.message_handler(commands=['start'])
-def send_welcome(message):
-    if not eh_o_dono(message): return
-    bot.reply_to(message, "Olá! Sou seu Notebook Debian.\n\n"
-                          "Comandos:\n"
-                          "/listar - Ver arquivos na pasta\n"
-                          "/baixar [nome] - Baixar arquivo\n"
-                          "Ou me envie um arquivo para eu salvar.")
+# --- PARTE 1: ESCUTAR O TELEGRAM (Roda em segundo plano) ---
 
-# 2. Comando /listar (Mostra arquivos da pasta atual)
-@bot.message_handler(commands=['listar'])
-def listar_arquivos(message):
-    if not eh_o_dono(message): return
-    arquivos = os.listdir('.') # Lista pasta atual
-    arquivos_str = "\n".join(arquivos)
-    if not arquivos:
-        bot.reply_to(message, "Pasta vazia.")
-    else:
-        bot.reply_to(message, f"📂 Arquivos no Notebook:\n\n{arquivos_str}")
+# Receber Texto
+@bot.message_handler(func=lambda m: True)
+def receber_texto(message):
+    global ultimo_chat_id, ultimo_nome
+    ultimo_chat_id = message.chat.id
+    ultimo_nome = message.from_user.first_name
+    
+    # Pula uma linha, mostra a mensagem colorida e restaura o prompt
+    print(f"\n\r\033[1;36m[{ultimo_nome}]:\033[0m {message.text}")
+    print("\r\033[1;32mVocê > \033[0m", end="", flush=True)
 
-# 3. Comando /baixar (Envia arquivo do Notebook pro Celular)
-@bot.message_handler(commands=['baixar'])
-def baixar_arquivo(message):
-    if not eh_o_dono(message): return
-    try:
-        # Pega o nome do arquivo depois do comando
-        nome_arquivo = message.text.split(" ", 1)[1]
-        if os.path.exists(nome_arquivo):
-            bot.reply_to(message, f"Enviando {nome_arquivo}...")
-            with open(nome_arquivo, 'rb') as doc:
-                bot.send_document(message.chat.id, doc)
-        else:
-            bot.reply_to(message, "Arquivo não encontrado!")
-    except IndexError:
-        bot.reply_to(message, "Use: /baixar nome_do_arquivo")
+# Receber Arquivos (Salva automaticamente)
+@bot.message_handler(content_types=['document', 'photo', 'audio', 'video'])
+def receber_arquivo(message):
+    global ultimo_chat_id, ultimo_nome
+    ultimo_chat_id = message.chat.id
+    ultimo_nome = message.from_user.first_name
 
-# 4. Receber Arquivos (Salva do Celular pro Notebook)
-@bot.message_handler(content_types=['document', 'photo'])
-def salvar_arquivo(message):
-    if not eh_o_dono(message): return
     try:
         if message.content_type == 'document':
-            file_info = bot.get_file(message.document.file_id)
-            nome_original = message.document.file_name
+            file_id = message.document.file_id
+            nome = message.document.file_name
         elif message.content_type == 'photo':
-            # Pega a foto de maior qualidade
-            file_info = bot.get_file(message.photo[-1].file_id)
-            nome_original = f"foto_{message.photo[-1].file_id}.jpg"
+            file_id = message.photo[-1].file_id
+            nome = f"foto_{file_id}.jpg"
+        else:
+            file_id = getattr(message, message.content_type).file_id
+            nome = f"{message.content_type}_{file_id}"
 
-        downloaded_file = bot.download_file(file_info.file_path)
+        file_info = bot.get_file(file_id)
+        downloaded = bot.download_file(file_info.file_path)
 
-        with open(nome_original, 'wb') as new_file:
-            new_file.write(downloaded_file)
+        with open(nome, 'wb') as new_file:
+            new_file.write(downloaded)
 
-        bot.reply_to(message, f"✅ Arquivo '{nome_original}' salvo no Debian!")
-        print(f"Arquivo recebido: {nome_original}")
-        
+        print(f"\n\r\033[1;33m[ARQUIVO RECEBIDO de {ultimo_nome}]: {nome} salvo!\033[0m")
+        bot.reply_to(message, f"✅ Recebi o arquivo: {nome}")
+        print("\r\033[1;32mVocê > \033[0m", end="", flush=True)
+
     except Exception as e:
-        bot.reply_to(message, f"Erro ao salvar: {e}")
+        print(f"\nErro ao baixar arquivo: {e}")
 
-# Mantém o bot rodando
-bot.infinity_polling()
+# --- PARTE 2: ENVIAR PELO TERMINAL (Roda no plano principal) ---
+def loop_terminal():
+    while True:
+        try:
+            # Fica esperando você digitar algo
+            texto = input("\033[1;32mVocê > \033[0m")
+            
+            # Comandos especiais do terminal
+            if texto.lower() in ['sair', 'exit']:
+                print("Encerrando chat...")
+                os._exit(0) # Mata tudo, inclusive a thread do bot
+            
+            # Comando para enviar arquivo: upload nome_do_arquivo.pdf
+            elif texto.startswith("upload "):
+                if not ultimo_chat_id:
+                    print("❌ Ninguém falou com você ainda. Não sei pra quem enviar.")
+                    continue
+                    
+                arquivo_nome = texto.split(" ", 1)[1]
+                if os.path.exists(arquivo_nome):
+                    print(f"Enviando {arquivo_nome} para {ultimo_nome}...")
+                    with open(arquivo_nome, 'rb') as doc:
+                        bot.send_document(ultimo_chat_id, doc)
+                    print("✅ Enviado!")
+                else:
+                    print("❌ Arquivo não encontrado na pasta.")
+
+            # Mensagem normal de texto
+            else:
+                if ultimo_chat_id:
+                    bot.send_message(ultimo_chat_id, texto)
+                else:
+                    print("⚠️ Aguarde alguém mandar um 'Oi' primeiro para responder.")
+
+        except Exception as e:
+            print(f"Erro no terminal: {e}")
+
+# --- INICIAR TUDO ---
+# Cria uma thread separada para o bot ficar ouvindo sem travar o terminal
+thread_bot = threading.Thread(target=bot.infinity_polling)
+thread_bot.daemon = True
+thread_bot.start()
+
+# O terminal assume o controle agora
+loop_terminal()
