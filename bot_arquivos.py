@@ -1,6 +1,5 @@
 import telebot
 import threading
-import time
 import os
 import sys
 
@@ -8,17 +7,27 @@ import sys
 TOKEN = "8454309616:AAG0TJjt0Jt4wAod0gCmEm4n4Lc1oYjY2m0" 
 bot = telebot.TeleBot(TOKEN)
 
-# --- LISTA DE CONTATOS ---
-# Adicione aqui os IDs dos seus amigos para dar apelidos
+# --- LISTA DE CONTATOS (SUA AGENDA) ---
+# Dica: Peça pro seu amigo mandar um "Oi" primeiro pra descobrir o ID dele.
 AMIGOS = {
-    # Exemplo: 12345678: "Melhor Amigo",
+    # ID : "Apelido"
+    123456789: "Teste",
+    987654321: "Hugo",
+    555555555: "Mae",
+    # Adicione seus amigos aqui...
 }
 
-# --- CORES E VISUAL ---
-COR_AZUL = "\033[1;34m"   # Azul escuro
-COR_CIANO = "\033[1;36m"  # Azul claro
-COR_BRANCO = "\033[1;37m" # Branco brilhante
+# Cores
+COR_AZUL = "\033[1;34m"
+COR_CIANO = "\033[1;36m"
+COR_VERDE = "\033[1;32m"
+COR_AMARELO = "\033[1;33m"
+COR_ROSA = "\033[1;35m"
 COR_RESET = "\033[0m"
+
+# Variáveis Globais
+chat_atual_id = None
+chat_atual_nome = "Ninguém"
 
 def mostrar_banner():
     os.system('cls' if os.name == 'nt' else 'clear')
@@ -35,101 +44,110 @@ def mostrar_banner():
     {COR_CIANO}  | | | |___| |__| |__| |_| |  _ <  / ___ \| |  | |
     {COR_CIANO}  |_| |_____|_____|_____\____|_| \_\/_/   \_\_|  |_|
 
-    {COR_RESET}    >>> Server Online • Debian 32-bit • v2.0  By Celso Jr. & Telegram FZ-LLC <<<
+    {COR_RESET}   >>> Server Online • Debian 32-bit • v3.0  By Celso Jr. & Telegram FZ-LLC <<<
     """
     print(logo)
+    print(f"Comandos: {COR_AMARELO}chat [nome]{COR_RESET} para escolher amigo | {COR_AMARELO}listar{COR_RESET} para ver contatos.")
+    print(f"          {COR_AMARELO}upload [arquivo]{COR_RESET} para enviar | {COR_AMARELO}sair{COR_RESET} para fechar.\n")
 
-def obter_nome_formatado(message):
-    id_user = message.chat.id
-    nome_original = message.from_user.first_name
-    
-    # Se conhecemos o ID, usamos o apelido
-    if id_user in AMIGOS:
-        return f"\033[1;35m{AMIGOS[id_user]}\033[0m" # Cor Rosa para VIPs
-    
-    # Se não, mostra o nome original + ID (pra você copiar)
-    return f"{nome_original} \033[90m(ID: {id_user})\033[0m"
+def obter_nome(user_id, first_name="Desconhecido"):
+    if user_id in AMIGOS:
+        return f"{COR_ROSA}{AMIGOS[user_id]}{COR_RESET}"
+    return f"{first_name} (ID: {user_id})"
 
-# Variáveis Globais
-ultimo_chat_id = None
-ultimo_nome = "Ninguém"
-
-mostrar_banner()
-print(f"{COR_BRANCO}Aguardando conexões... (Ctrl+C para encerrar){COR_RESET}\n")
-
-# --- RECEBER TEXTO ---
+# --- RECEBER MENSAGENS (Background) ---
 @bot.message_handler(func=lambda m: True)
 def receber_texto(message):
-    global ultimo_chat_id, ultimo_nome
-    ultimo_chat_id = message.chat.id
-    ultimo_nome = obter_nome_formatado(message)
-    
-    print(f"\n\r\033[1;36m[{ultimo_nome}]:\033[0m {message.text}")
-    print("\r\033[1;32mVocê > \033[0m", end="", flush=True)
+    nome = obter_nome(message.chat.id, message.from_user.first_name)
+    print(f"\n\r{COR_CIANO}[{nome}]:{COR_RESET} {message.text}")
+    print(f"\r{COR_VERDE}Você ({chat_atual_nome}) > {COR_RESET}", end="", flush=True)
 
-# --- RECEBER ARQUIVOS ---
 @bot.message_handler(content_types=['document', 'photo', 'audio', 'video'])
 def receber_arquivo(message):
-    global ultimo_chat_id, ultimo_nome
-    ultimo_chat_id = message.chat.id
-    ultimo_nome = obter_nome_formatado(message)
-
+    nome_user = obter_nome(message.chat.id, message.from_user.first_name)
     try:
-        # Lógica para pegar o ID do arquivo
         if message.content_type == 'document':
-            file_id = message.document.file_id
-            nome = message.document.file_name
+            fid = message.document.file_id; fname = message.document.file_name
         elif message.content_type == 'photo':
-            file_id = message.photo[-1].file_id
-            nome = f"foto_{file_id[-5:]}.jpg" # Nome curto
+            fid = message.photo[-1].file_id; fname = f"foto_{fid[-5:]}.jpg"
         else:
-            file_id = getattr(message, message.content_type).file_id
-            nome = f"{message.content_type}_{file_id[-5:]}"
+            fid = getattr(message, message.content_type).file_id; fname = f"{message.content_type}_{fid[-5:]}"
 
-        file_info = bot.get_file(file_id)
-        downloaded = bot.download_file(file_info.file_path)
+        path = bot.get_file(fid).file_path
+        downloaded = bot.download_file(path)
+        with open(fname, 'wb') as f: f.write(downloaded)
 
-        with open(nome, 'wb') as new_file:
-            new_file.write(downloaded)
+        print(f"\n\r{COR_AMARELO}[ARQUIVO DE {nome_user}]: {fname} salvo!{COR_RESET}")
+        bot.reply_to(message, f"✅ Recebi: {fname}")
+        print(f"\r{COR_VERDE}Você ({chat_atual_nome}) > {COR_RESET}", end="", flush=True)
+    except Exception as e: print(f"\nErro download: {e}")
 
-        print(f"\n\r\033[1;33m[ARQUIVO DE {ultimo_nome}]: {nome} salvo!\033[0m")
-        bot.reply_to(message, f"✅ Recebi: {nome}")
-        print("\r\033[1;32mVocê > \033[0m", end="", flush=True)
-
-    except Exception as e:
-        print(f"\nErro download: {e}")
-
-# --- ENVIAR ---
+# --- LOOP PRINCIPAL DO TERMINAL ---
 def loop_terminal():
+    global chat_atual_id, chat_atual_nome
+    
     while True:
         try:
-            texto = input("\033[1;32mVocê > \033[0m")
+            texto = input(f"{COR_VERDE}Você ({chat_atual_nome}) > {COR_RESET}")
             
+            if not texto: continue
+
+            # COMANDO: SAIR
             if texto.lower() in ['sair', 'exit']:
                 os._exit(0)
-            
-            elif texto.startswith("upload "):
-                if not ultimo_chat_id:
-                    print("❌ Ninguém falou com você ainda.")
+
+            # COMANDO: LISTAR CONTATOS
+            elif texto.lower() == 'listar':
+                print(f"\n{COR_AMARELO}--- SEUS CONTATOS ---{COR_RESET}")
+                for id_num, nome in AMIGOS.items():
+                    print(f"- {nome} (ID: {id_num})")
+                print("-" * 20)
+
+            # COMANDO: CHAT (Mudar de conversa)
+            elif texto.lower().startswith("chat "):
+                busca = texto.split(" ", 1)[1].lower()
+                encontrou = False
+                
+                # Procura no dicionário AMIGOS
+                for id_num, nome_amigo in AMIGOS.items():
+                    if busca in nome_amigo.lower():
+                        chat_atual_id = id_num
+                        chat_atual_nome = nome_amigo
+                        print(f"{COR_ROSA}>>> Conversando agora com: {chat_atual_nome} <<<{COR_RESET}")
+                        encontrou = True
+                        break
+                
+                if not encontrou:
+                    # Tenta ver se a pessoa digitou o ID direto (números)
+                    if busca.isdigit():
+                        chat_atual_id = int(busca)
+                        chat_atual_nome = f"ID {busca}"
+                        print(f"{COR_ROSA}>>> ID Manual definido: {busca} <<<{COR_RESET}")
+                    else:
+                        print(f"❌ Amigo '{busca}' não encontrado na lista AMIGOS.")
+
+            # COMANDO: UPLOAD
+            elif texto.lower().startswith("upload "):
+                if not chat_atual_id:
+                    print("❌ Selecione um amigo primeiro! Use: chat [nome]")
                     continue
                 arquivo = texto.split(" ", 1)[1]
                 if os.path.exists(arquivo):
-                    print(f"Enviando {arquivo}...")
-                    with open(arquivo, 'rb') as doc:
-                        bot.send_document(ultimo_chat_id, doc)
-                else:
-                    print("❌ Arquivo não existe.")
+                    print(f"Enviando {arquivo} para {chat_atual_nome}...")
+                    with open(arquivo, 'rb') as d: bot.send_document(chat_atual_id, d)
+                else: print("❌ Arquivo não existe.")
+
+            # MENSAGEM NORMAL (Envia para o chat atual)
             else:
-                if ultimo_chat_id:
-                    bot.send_message(ultimo_chat_id, texto)
+                if chat_atual_id:
+                    bot.send_message(chat_atual_id, texto)
                 else:
-                    print("⚠️ Espere alguém mandar mensagem primeiro.")
+                    print("⚠️ Ninguém selecionado. Digite 'chat [nome]' ou espere alguém mandar Oi.")
 
         except Exception as e:
             print(f"Erro: {e}")
 
-# --- START ---
-t = threading.Thread(target=bot.infinity_polling)
-t.daemon = True
-t.start()
+# Start
+mostrar_banner()
+t = threading.Thread(target=bot.infinity_polling); t.daemon = True; t.start()
 loop_terminal()
